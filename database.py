@@ -1,36 +1,36 @@
-
 import sqlite3
-
+import hashlib
 from pathlib import Path
 from datetime import datetime
 
-BASE_DIR = Path(_file_).resolve().parent
-DATA_DIR = BASE_DIR / "data"
-DB_PATH = DATA_DIR / "icebound.db"
-
-DATA_DIR.mkdir(
-    parents=True,
-    exist_ok=True
-)
+DB_PATH= Path("icebound.db")
 
 def get_connection():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    conn.execute(
-        "PRAGMA foreign_keys = ON"
-    )
-    return conn
+    return sqlite3.connect(DB_PATH)
 
-def initialize_database():
-    conn = get_connection()
-    cursor = conn.cursor()
-
-    cursor.execute("""
+def init_db():
+    with get_connection() as con:
+        con.execute("""
         CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            username TEXT UNIQUE NOT NULL,
-            password_hash TEXT NOT NULL,
-            created_at TEXT NOT NULL
-        )
-    """)
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                username TEXT UNIQUE NOT NULL,
+                password_hash TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            )
+            """)
+        con.execute("""
+            CREATE TABLE IF NOT EXISTS documents (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                filename TEXT NOT NULL,
+                filepath TEXT NOT NULL,
+                uploaded_at TEXT NOT NULL,
+                FOREIGN KEY(user_id) REFERENCES users(id)
+            )
+        """)
+        con.commit()
+
+def hash_password(password):
+    return hashlib.sha256(password.encode("utf-8")).hexdigest()
+        
