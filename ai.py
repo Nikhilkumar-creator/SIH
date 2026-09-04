@@ -1,58 +1,40 @@
-#ai_engine.py
 import requests
+import re
 
-from pypdf import PdfReader
+OLLAMA_URL = "http://localhost:11434/api/generate"
+DEFAULT_MODEL = "llama3.2"
 
-from database import add_history
+def _chunks(text, size=6000):
+    words = text.split()
+    chunks, current = [], []
+    count = 0
+    for word in words:
+        if count + len(word) + 1 > size and current:
+            chunks.append(" ".join(current))
+            current, count = [], 0
+        current.append(word)
+        count += len(word) + 1
+    if current:
+        chunks.append(" ".join(current))
+    return chunks
 
-OLLAMA_url="http://localhost:11434"
-DEFAULT_MODE="llama3.2"
-
-def extract_text(pdf_path):
+def ask_ollama(prompt, model=DEFAULT_MODEL):
     try:
-        reader=PdfReader(str(pdf_path))
-        pages=[]
+        response = requests.post(
+            OLLAMA_URL,
+            json={
+                "model": model,
+                "prompt": prompt,
+                "stream": False
+            },
+            timeout=120
+        )
 
-        for page in reader.pages:
-            text=page.extract_text()
+        response.raise_for_status()
 
-            if text:
-                pages.append(text)
+        return response.json().get("response", "").strip()
 
-        return "\n\n".join(pages).strip()
-
-    except Exception as error:
-        raise RuntimeError(f"PDF extraction failed:{error}")
-def check_ollama(model=DEFAULT_MODEL):
-    try:
-        response=requests.get(f"{OLLAMA_URL}/api/tags",timeout=3)
-
-        if response.status_code !=200:
-            return False,"OLLAMA is not responding."
-
-        available_models=[model_data.get("name","") 
-                          for model_data in models]
-        matching = any(name==model or
-                       name.startswith(model +":")
-                       for name in available_models
-                       )
-        if not matching:
-            return False,(f"model'{model} is not installed.")
-
-        return True,"Ollama connected"
-
-    except
-requests.exceptions.ConnectionError:
-   return False,("Ollama is not running."
-    "start Ollama to use local AI.")
-    except Exception as error:
-       re
-
-def ask_ollama(prompt,model=DEFAULT_MODEL:)
-         connected,message=check_ollama(model)
-
-
-
-
-        
-
+    except requests.RequestException as exc:
+        return f"Ollama request failed:.{exc}.
+    make sure Ollama is running."
+    
