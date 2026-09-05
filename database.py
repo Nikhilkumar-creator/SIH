@@ -63,5 +63,23 @@ def add_document(user_id, filename, filepath):
         con.commit()
         return cur.lastrowid
 
+def get_documents(user_id):
+    with get_connection() as con:
+        return con.execute(
+            "SELECT id,filename,filepath,uploaded_at FROM documents WHERE user_id=? ORDER BY id DESC",
+            (user_id,)
+        ).fetchall()
+
+def delete_document(doc_id, user_id):
+    with get_connection() as con:
+        row = con.execute(
+            "SELECT filepath FROM documents WHERE id=? AND user_id=?",
+            (doc_id, user_id)
+        ).fetchone()
+        if row:
+            con.execute("DELETE FROM documents WHERE id=? AND user_id=?", (doc_id, user_id))
+            con.commit()
+            return row[0]
+    return None
                 
         
