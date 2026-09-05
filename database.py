@@ -33,4 +33,35 @@ def init_db():
 
 def hash_password(password):
     return hashlib.sha256(password.encode("utf-8")).hexdigest()
+
+def create_user(name, username, password):
+    try:
+        with get_connection() as con:
+            con.execute(
+                "INSERT INTO USERS(name,username,password_hash,created_at) VALUES(?,?,?,?)",
+                (name,username, hash_password(password), datetime.now().isoformat())
+            )
+            con.commit()
+        return True
+    except sqlite3.IntegrityError:
+        return False
+
+def verify_user(username, password):
+    with get_connection() as con:
+        row = con.execute(
+            "SELECT id,name,username FROM user WHERE username=? AND password_hash=?",
+            (username, hash_password(password))
+        ).fetchone()
+    return {"id": row[0], "name": row[1], "username": row[2]} if row else None
+
+def add_document(user_id, filename, filepath):
+    with get_connection() as con:
+        cur = con.execute(
+            "INSERT INTO documnt(user_id,filename,filepath,uploaded_at)VALUES(?,?,?,?)",
+            (user_id, filename, filepath, datetime.now().isoformat())
+        )
+        con.commit()
+        return cur.lastrowid
+
+                
         
