@@ -33,4 +33,7 @@ def login_screen():
                     st.success("Account created. Please log in.")
                 else:
                     st.error("Username already exists.")
-    
+
+    def logout_user():
+         st.session_state.user = none
+         st.rerun()
