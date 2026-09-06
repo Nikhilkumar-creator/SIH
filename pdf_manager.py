@@ -4,8 +4,10 @@ from PyPDF2 import PdfReader
 from database import add_document, get_documents, delete_document
 UPLOAD_ROOT = Path("icebound_documents")
 UPLOAD_ROOT.mkdir(exist_ok=True)
+
 def list_user_documents(user_id):
     return get_documents(user_id)
+
 def save_pdf(uploaded_file, user_id):
     if not uploaded_file.name.lower().endswith(".pdf"):
         raise ValueError("Only PDF files are supported.")
@@ -21,6 +23,17 @@ def save_pdf(uploaded_file, user_id):
 
     doc_id = add_document(user_id, safe_name, str(path))
     return doc_id, path
+
+    def remove_pdf(doc_id, user_id):
+    path = delete_document(doc_id, user_id)
+    if path:
+        p = Path(path)
+        if p.exists():
+            p.unlink()
+        return True
+    return False
+
+
 
 
 
