@@ -60,6 +60,46 @@ def dashboard(user):
        ["📄 View", "🧠 Summary", "🔑 Key Points", "💬 Ask ICEBOUND", "🔎 Search"] 
     )
 
+    with tab1:
+        st.text_area("Extracted document text", text, height=500)
+
+    with tab2:
+        if st.button("Generate Summary"):
+            with st.spinner("ICEBOUND is reading the document..."):
+                st.write(summarize_document(text, st.session_state.model))
+
+    with tab3:
+        if st.button("Extract Key Points"):
+            with st.spinner("Finding important information..."):
+                st.write(extract_key_points(text, st.session_state.model))
+
+    with tab4:
+        q = st.text_input("Ask a question about this PDF")
+        if st.button("Ask") and q.strip():
+            with st.spinner("Searching the document and asking local AI..."):
+                st.write(answer_question(text, q, st.session_state.model))
+
+    with tab5:
+        keyword = st.text_input("Search keyword(s)")
+        if st.button("Search") and keyword.strip():
+            results = search_keyword(text, keyword)
+            if results:
+                for result in results:
+                    st.write("•", result)
+            else:
+                st.warning("No matching text found.")
+
+    st.divider()
+    if st.button("Delete Selected PDF", type="secondary"):
+        if remove_pdf(doc[0], user["id"]):
+            st.success("PDF deleted.")
+            st.rerun()
+
+
+                    
+        
+
+
                 
     
     
