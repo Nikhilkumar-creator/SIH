@@ -1,86 +1,86 @@
-import requests
-import re
+import json
+import urllib.request
+import urllib.error
 
 OLLAMA_URL = "http://localhost:11434/api/generate"
-DEFAULT_MODEL = "llama3.2"
+DEFAULT_MODEL = "tinyllama"
 
-def _chunks(text, size=6000):
-    words = text.split()
-    chunks, current = [], []
-    count = 0
-    for word in words:
-        if count + len(word) + 1 > size and current:
-            chunks.append(" ".join(current))
-            current, count = [], 0
-        current.append(word)
-        count += len(word) + 1
-    if current:
-        chunks.append(" ".join(current))
-    return chunks
-
-def ask_ollama(prompt, model=DEFAULT_MODEL):
+def ollama_generate(prompt, model=DEFAULT_MODEL, temperature=0.2):
+    payload = json.dumps({
+        "model": model,
+        "prompt": prompt,
+        "stream": False,
+        "options": {"temperature": temperature}
+    }).encode("utf-8")
+    request = urllib.request.Request(
+        OLLAMA_URL,
+        data=payload,
+        headers={"Content-Type": "application/json"},
+        method="POST"
+    )
     try:
-        response = requests.post(
-            OLLAMA_URL,
-            json={
-                "model": model,
-                "prompt": prompt,
-                "stream": False
-            },
-            timeout=120
-        )
+        with urllib.request.urlopen(request, timeout=120) as response:
+            data = json.loads(response.read().decode("utf-8"))
+            return data.get("response", "").strip()
+    except urllib.error.URLError:
+        return "Ollama is not reachable. Start Ollama and make sure the TinyLlama model is installed."
+    except Exception as exc:
+        return f"Local AI error: {exc}"
 
-        response.raise_for_status()
+def summarize(text, title="Research Document"):
+    text = text[:12000]
+    prompt = f"""You are ICEBOUND, a polar research knowledge assistant.
+Summarize the following research document for a student and general public audience.
+Give:
+1. A short overview
+2. Five important findings
+3. Important scientific terms
+Do not invent information.
 
-        return response.json().get("response", "").strip()
+Document title: {title}
 
-    except requests.RequestException as exc:
-        return f"AI connection error:
-    {exc}. MakesureOllama is running."
-    
-    def summarize_document(text, model=DEFAULT_MODEL):
-    if not text:
-        return "No readable text was found in this PDF."
+Document:
+{text}"""
+    return ollama_generate(prompt)
 
-    parts = _chunks(text)
-    summaries = []
-    for part in parts[:8]:
-        summaries.append(ask_ollama(
-            "Summarize the following document section accurately. "
-            "Keep important facts, dates, names, procedures and numbers.\n\n" + part,
-            model
-        ))
-    combined = "\n\n".join(summaries)
-    return ask_ollama(
-        "Create a concise final summary from these section summaries. "
-        "Use headings and bullet points.\n\n" + combined,
-        model
-    )
+def answer_question(question, context):
+    context = context[:18000]
+    prompt = f"""You are ICEBOUND, a document question-answering assistant.
+Answer the user's question using ONLY the supplied repository context.
+If the answer is not present, say that it is not available in the supplied documents.
+Be concise and clearly explain the answer.
 
-def extract_key_points(text, model=DEFAULT_MODEL):
-    return ask_ollama(
-        "Extract the most important key points from this document. "
-        "Return 8-12 concise bullet points. Do not invent information.\n\n" + text[:30000],
-        model
-    )
+Question:
+{question}
 
-def answer_question(text,question,model=DEFAULT_MODEL):
-    if not text:
-        return"No document text is available."
+Repository context:
+{context}"""
+    return ollama_generate(prompt)
 
-    chunks = _chunks(text,7000)
-    scored=[]
-    terms = set(re.findall(r"\b\w+\b",question.lower()))
+def generate_outreach(text, title):
+    text = text[:14000]
+    prompt = f"""You are the ICEBOUND polar research outreach writer.
+Using ONLY the research below, create:
+A) A public-friendly website article of about 250 words.
+B) A social-media post of about 100 words.
+C) Five short keywords/hashtags.
+Keep scientific claims faithful to the source. Do not invent facts.
 
-    for chunk in chunks:
-        chunk_terms=set(re)
+Title: {title}
 
+Research:
+{text}"""
+    return ollama_generate(prompt)
 
+def generate_expedition_content(name, location, year, description):
+    prompt = f"""Create a concise public outreach post for a polar expedition.
+Name: {name}
+Location: {location}
+Year: {year}
+Description: {description}
+Use only these facts and do not invent scientific results."""
+    return ollama_generate(prompt)
 
-
-
-
-
-
-
-   
+def check_ollama(model=DEFAULT_MODEL):
+    result = ollama_generate("Reply with exactly: ICEBOUND AI READY", model=model, temperature=0)
+    return result
