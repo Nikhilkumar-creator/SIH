@@ -1,6 +1,6 @@
 import streamlit as st
 import database
-import authentication
+import auth
 import ui
 
 st.set_page_config(page_title="ICEBOUND", page_icon="🧊", layout="wide")
