@@ -1,7 +1,7 @@
 import streamlit as st
 from pathlib import Path
 import database
-import authentication
+import auth
 import pdf_manager
 import ai
 
