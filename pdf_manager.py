@@ -1,47 +1,55 @@
 from pathlib import Path
-import hashlib
+import re
 from PyPDF2 import PdfReader
-from database import add_document, get_documents, delete_document
-UPLOAD_ROOT = Path("icebound_documents")
-UPLOAD_ROOT.mkdir(exist_ok=True)
 
-def list_user_documents(user_id):
-    return get_documents(user_id)
+BASE_DIR = Path(__file__).resolve().parent
+UPLOAD_DIR = BASE_DIR / "uploads"
+MEDIA_DIR = BASE_DIR / "media"
+UPLOAD_DIR.mkdir(exist_ok=True)
+MEDIA_DIR.mkdir(exist_ok=True)
 
-def save_pdf(uploaded_file, user_id):
-    if not uploaded_file.name.lower().endswith(".pdf"):
-        raise ValueError("Only PDF files are supported.")
+def safe_filename(filename):
+    cleaned = re.sub(r"[^A-Za-z0-9._-]+", "_", filename)
+    return cleaned.strip("._") or "file"
 
-    user_dir = UPLOAD_ROOT / str(user_id)
-    user_dir.mkdir(exist_ok=True)
+def save_uploaded_pdf(uploaded_file):
+    filename = safe_filename(uploaded_file.name)
+    target = UPLOAD_DIR / filename
+    counter = 1
+    while target.exists():
+        target = UPLOAD_DIR / f"{Path(filename).stem}_{counter}{Path(filename).suffix}"
+        counter += 1
+    target.write_bytes(uploaded_file.getvalue())
+    return target
 
-    safe_name = Path(uploaded_file.name).name
-    content = uploaded_file.getvalue()
-    file_hash = hashlib.sha256(content).hexdigest()[:10]
-    path = user_dir/ f"{file_hash}_{safe_name}"
-    path.write_bytes(content)
+def extract_pdf_text(path):
+    reader = PdfReader(str(path))
+    text = []
+    for page in reader.pages:
+        try:
+            text.append(page.extract_text() or "")
+        except Exception:
+            text.append("")
+    return "\n".join(text).strip()
 
-    doc_id = add_document(user_id, safe_name, str(path))
-    return doc_id, path
+def save_media(uploaded_file):
+    filename = safe_filename(uploaded_file.name)
+    target = MEDIA_DIR / filename
+    counter = 1
+    while target.exists():
+        target = MEDIA_DIR / f"{Path(filename).stem}_{counter}{Path(filename).suffix}"
+        counter += 1
+    target.write_bytes(uploaded_file.getvalue())
+    return target
 
-    def remove_pdf(doc_id, user_id):
-    path = delete_document(doc_id, user_id)
-    if path:
-        p = Path(path)
-        if p.exists():
-            p.unlink()
+def get_file_path(filename, media=False):
+    base = MEDIA_DIR if media else UPLOAD_DIR
+    path = base / safe_filename(filename)
+    return path if path.exists() else None
+
+def delete_file(filename, media=False):
+    path = get_file_path(filename, media)
+    if path and path.exists():
+        path.unlink()
         return True
     return False
-
-def extract_text(filepath):
-    reader = PdfReader(filepath)
-    pages = []
-    for page in reader.pages:
-        pages.append(page.extract_text() or "")
-    return "\n".join(pages).strip()
-
-
-
-
-
-

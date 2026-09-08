@@ -1,8 +1,12 @@
 import json
 import urllib.request
 import urllib.error
+import json
+import urllib.request
+import urllib.error
 
 OLLAMA_URL = "http://localhost:11434/api/generate"
+DEFAULT_MODEL = "tinyllama"
 DEFAULT_MODEL = "tinyllama"
 
 def ollama_generate(prompt, model=DEFAULT_MODEL, temperature=0.2):
@@ -56,6 +60,20 @@ Repository context:
 {context}"""
     return ollama_generate(prompt)
 
+def generate_outreach(text, title):
+    text = text[:14000]
+    prompt = f"""You are the ICEBOUND polar research outreach writer.
+Using ONLY the research below, create:
+A) A public-friendly website article of about 250 words.
+B) A social-media post of about 100 words.
+C) Five short keywords/hashtags.
+Keep scientific claims faithful to the source. Do not invent facts.
+
+Title: {title}
+
+Research:
+{text}"""
+    return ollama_generate(prompt)
 def generate_outreach(text, title):
     text = text[:14000]
     prompt = f"""You are the ICEBOUND polar research outreach writer.
