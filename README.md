@@ -146,7 +146,11 @@ pip install -r requirements.txt
 ### 5. Start ICEBOUND
 
 ```bash
+<<<<<<< HEAD
 streamlit run main.py
+=======
+python -m streamlit run main.py
+>>>>>>> c988407e5074a1aabea008c5aab888ee9360c5a5
 ```
 
 ## 🔄 Prototype Workflow
