@@ -17,7 +17,7 @@ def login_screen():
         username = st.text_input("Username", key="login_user")
         password = st.text_input("Password", type="password", key="login_pass")
         if st.button("Login", type="primary", use_container_width=True):
-            user = authentication.login_user(username, password)
+            user = auth.login_user(username, password)
             if user:
                 st.session_state.user = user
                 st.rerun()
@@ -29,7 +29,7 @@ def login_screen():
         password = st.text_input("Choose password", type="password", key="reg_pass")
         role = st.selectbox("Role", ["Student","Researcher"])
         if st.button("Create Account", use_container_width=True):
-            ok, msg = authentication.register_user(username, password, role)
+            ok, msg = auth.register_user(username, password, role)
             if ok:
                 st.success(msg)
             else:
