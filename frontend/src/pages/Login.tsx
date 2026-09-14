@@ -13,41 +13,46 @@ export const Login: React.FC = () => {
     e.preventDefault();
     setSubmitting(true);
     setError(null);
-    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
-    setSubmitting(false);
-    if (signInError) {
-      setError(signInError.message);
-      return;
+    try {
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+      if (signInError) {
+        setError(signInError.message);
+        return;
+      }
+      navigate('/admin');
+    } catch (err: any) {
+      setError(err?.message || 'Login failed. Please try again.');
+    } finally {
+      setSubmitting(false);
     }
-    navigate('/admin');
   };
 
   return (
-    <section style={{ maxWidth: 360, margin: '0 auto' }}>
-      <h2>Sign in</h2>
+    <section style={{ maxWidth: 380, margin: '40px auto', padding: 24, border: '1px solid #e2e8f0', borderRadius: 8, background: '#ffffff' }}>
+      <h2 style={{ marginBottom: 20 }}>Sign in</h2>
       <form onSubmit={handleSubmit}>
-        <label>
-          Email
+        <label style={{ display: 'block', marginBottom: 15 }}>
+          <span style={{ display: 'block', marginBottom: 6, fontSize: 14, fontWeight: 500 }}>Email</span>
           <input
             type="email"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            style={{ display: 'block', width: '100%', padding: 8, marginBottom: 10 }}
+            style={{ width: '100%' }}
           />
         </label>
-        <label>
-          Password
+        <label style={{ display: 'block', marginBottom: 20 }}>
+          <span style={{ display: 'block', marginBottom: 6, fontSize: 14, fontWeight: 500 }}>Password</span>
           <input
             type="password"
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            style={{ display: 'block', width: '100%', padding: 8, marginBottom: 10 }}
+            style={{ width: '100%' }}
           />
         </label>
-        {error && <p role="alert" style={{ color: 'crimson' }}>{error}</p>}
-        <button type="submit" disabled={submitting}>
+        {error && <p role="alert" style={{ color: '#dc2626', fontSize: 14, marginBottom: 15 }}>{error}</p>}
+        <button type="submit" disabled={submitting} style={{ width: '100%' }}>
           {submitting ? 'Signing in…' : 'Sign in'}
         </button>
       </form>

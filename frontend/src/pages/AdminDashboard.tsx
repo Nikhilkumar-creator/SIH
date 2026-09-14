@@ -20,14 +20,21 @@ export const AdminDashboard: React.FC = () => {
 
   const load = async () => {
     setLoading(true);
-    const { data, error: err } = await supabase
-      .from('generated_content')
-      .select('*')
-      .neq('status', 'published')
-      .order('created_at', { ascending: true });
-    if (err) setError('Could not load the review queue.');
-    else setItems((data ?? []) as GeneratedContent[]);
-    setLoading(false);
+    setError(null);
+    try {
+      const { data, error: err } = await supabase
+        .from('generated_content')
+        .select('*')
+        .neq('status', 'published')
+        .order('created_at', { ascending: true });
+      if (err) setError('Could not load the review queue.');
+      else setItems((data ?? []) as GeneratedContent[]);
+    } catch (err) {
+      console.error('Load dashboard error:', err);
+      setError('Database connection error.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -37,37 +44,47 @@ export const AdminDashboard: React.FC = () => {
   const advance = async (item: GeneratedContent) => {
     const next = NEXT_STATUS[item.status];
     if (!next) return;
-    // Admin-approval -> published is the only transition admins gate;
-    // editors can move draft -> peer_review themselves.
     if (next === 'published' && profile?.role !== 'admin') {
-      setError('Only an admin can publish.');
+      setError('Only an admin can publish content.');
       return;
     }
-    const { error: err } = await supabase
-      .from('generated_content')
-      .update({ status: next, reviewed_by: profile?.id, published_at: next === 'published' ? new Date().toISOString() : null })
-      .eq('id', item.id);
-    if (err) setError(err.message);
-    else load();
+    try {
+      const { error: err } = await supabase
+        .from('generated_content')
+        .update({
+          status: next,
+          reviewed_by: profile?.id,
+          published_at: next === 'published' ? new Date().toISOString() : null,
+        })
+        .eq('id', item.id);
+      if (err) setError(err.message);
+      else load();
+    } catch (err: any) {
+      setError(err?.message || 'Failed to update item status.');
+    }
   };
 
   const reject = async (item: GeneratedContent) => {
-    const { error: err } = await supabase
-      .from('generated_content')
-      .update({ status: 'rejected', reviewed_by: profile?.id })
-      .eq('id', item.id);
-    if (err) setError(err.message);
-    else load();
+    try {
+      const { error: err } = await supabase
+        .from('generated_content')
+        .update({ status: 'rejected', reviewed_by: profile?.id })
+        .eq('id', item.id);
+      if (err) setError(err.message);
+      else load();
+    } catch (err: any) {
+      setError(err?.message || 'Failed to reject item.');
+    }
   };
 
-  if (loading) return <p>Loading review queue…</p>;
+  if (loading) return <p style={{ padding: 20 }}>Loading review queue…</p>;
 
   return (
     <section>
-      <h2>Editorial Review Queue</h2>
-      {error && <p role="alert" style={{ color: 'crimson' }}>{error}</p>}
+      <h2 style={{ marginBottom: 16 }}>Editorial Review Queue</h2>
+      {error && <p role="alert" style={{ color: '#dc2626', marginBottom: 15 }}>{error}</p>}
       {items.length === 0 ? (
-        <p>Nothing waiting on review.</p>
+        <p style={{ color: '#64748b', marginTop: 10 }}>Nothing waiting on review.</p>
       ) : (
         items.map((item) => (
           <OutreachEditor
