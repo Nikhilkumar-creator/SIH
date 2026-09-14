@@ -18,15 +18,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setLoading(false);
-    });
+    supabase.auth
+      .getSession()
+      .then(({ data }) => {
+        setSession(data?.session ?? null);
+      })
+      .catch((err) => {
+        console.error('Failed to get session:', err);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
 
     const { data: sub } = supabase.auth.onAuthStateChange((_event, newSession) => {
       setSession(newSession);
+      setLoading(false);
     });
-    return () => sub.subscription.unsubscribe();
+
+    return () => {
+      sub?.subscription?.unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
@@ -38,14 +49,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .from('profiles')
       .select('id, full_name, role, department')
       .eq('id', session.user.id)
-      .single()
+      .maybeSingle()
       .then(({ data, error }) => {
-        if (!error) setProfile(data as Profile);
+        if (!error && data) {
+          setProfile(data as Profile);
+        } else {
+          setProfile(null);
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to fetch user profile:', err);
+        setProfile(null);
       });
   }, [session]);
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.error('Error signing out:', err);
+    } finally {
+      setSession(null);
+      setProfile(null);
+    }
   };
 
   return (
@@ -57,6 +83,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 export function useAuth(): AuthContextValue {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
+  if (!ctx) {
+    throw new Error('useAuth must be used within AuthProvider');
+  }
   return ctx;
 }
