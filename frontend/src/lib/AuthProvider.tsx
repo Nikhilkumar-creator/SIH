@@ -17,51 +17,67 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    supabase.auth
-      .getSession()
-      .then(({ data }) => {
-        setSession(data?.session ?? null);
-      })
-      .catch((err) => {
-        console.error('Failed to get session:', err);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
+  const fetchProfile = async (userId: string): Promise<Profile | null> => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, full_name, role, department')
+        .eq('id', userId)
+        .maybeSingle();
 
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      if (!error && data) {
+        return data as Profile;
+      }
+    } catch (err) {
+      console.error('Error fetching user profile:', err);
+    }
+    return null;
+  };
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const initAuth = async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        const currentSession = data?.session ?? null;
+
+        if (isMounted) {
+          setSession(currentSession);
+          if (currentSession?.user) {
+            const userProfile = await fetchProfile(currentSession.user.id);
+            if (isMounted) setProfile(userProfile);
+          } else {
+            if (isMounted) setProfile(null);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to initialize auth session:', err);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    initAuth();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
+      if (!isMounted) return;
       setSession(newSession);
-      setLoading(false);
+
+      if (newSession?.user) {
+        const userProfile = await fetchProfile(newSession.user.id);
+        if (isMounted) setProfile(userProfile);
+      } else {
+        if (isMounted) setProfile(null);
+      }
+      if (isMounted) setLoading(false);
     });
 
     return () => {
-      sub?.subscription?.unsubscribe();
+      isMounted = false;
+      authListener?.subscription?.unsubscribe();
     };
   }, []);
-
-  useEffect(() => {
-    if (!session?.user) {
-      setProfile(null);
-      return;
-    }
-    supabase
-      .from('profiles')
-      .select('id, full_name, role, department')
-      .eq('id', session.user.id)
-      .maybeSingle()
-      .then(({ data, error }) => {
-        if (!error && data) {
-          setProfile(data as Profile);
-        } else {
-          setProfile(null);
-        }
-      })
-      .catch((err) => {
-        console.error('Failed to fetch user profile:', err);
-        setProfile(null);
-      });
-  }, [session]);
 
   const signOut = async () => {
     try {
