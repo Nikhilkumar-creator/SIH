@@ -22,7 +22,7 @@ app = FastAPI(title="NCPOR AI Media Processing Engine", version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
+    allow_origins=["http://localhost:5173", "*"],
     allow_credentials=True,
     allow_methods=["GET", "POST"],
     allow_headers=["Authorization", "Content-Type"],
@@ -60,6 +60,29 @@ async def health():
     except Exception:
         db_ok = False
     return {"status": "ok" if db_ok else "degraded", "supabase_reachable": db_ok}
+
+
+@app.post("/api/ingest")
+async def ingest_document(file: UploadFile = File(...)):
+    """
+    Unauthenticated direct testing route for PDF ingestion.
+    """
+    if not file.filename or not file.filename.lower().endswith(".pdf"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only PDF documents are supported",
+        )
+
+    extracted_text = pdf_service.extract_text(file)
+    result = await ollama_service.generate_structured(extracted_text)
+
+    return {
+        "status": "success",
+        "filename": file.filename,
+        "summary": result.get("summary", ""),
+        "suggested_tags": result.get("tags", []),
+        "generated_article": result.get("article", ""),
+    }
 
 
 class ProcessingResponse(BaseModel):
