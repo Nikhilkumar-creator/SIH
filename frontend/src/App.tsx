@@ -14,7 +14,7 @@ export const App: React.FC = () => {
       <AuthProvider>
         <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
           <Navbar />
-          <main style={{ flex: 1, padding: 20, maxWidth: 1200, margin: '0 auto', width: '100%' }}>
+          <main style={{ flex: 1, padding: '32px 24px', maxWidth: 1280, margin: '0 auto', width: '100%' }}>
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/repository" element={<Repository />} />
