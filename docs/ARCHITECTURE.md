@@ -1,5 +1,7 @@
 # Architecture Notes, Assumptions & Risks
 
+> **Visual Diagrams & Flowcharts**: For interactive Mermaid architecture diagrams, user journey maps, AI ingestion sequences, and ER models, refer to [`docs/DIAGRAMS_AND_FLOWS.md`](./DIAGRAMS_AND_FLOWS.md).
+
 ## Assumptions made (spec was ambiguous or truncated here)
 
 1. **Role check constraints were cut off in the source DDL** (`profiles.role`,

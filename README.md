@@ -4,7 +4,7 @@ A knowledge-repository and AI-assisted outreach portal built on React +
 Vite (frontend), Supabase (Postgres + Storage + Auth + RLS), and a local
 FastAPI + Ollama service for document ingestion and content generation.
 See `docs/ARCHITECTURE.md` for design decisions, assumptions, and known
-limitations, and `docs/API.md` for the full API contract.
+limitations, `docs/DIAGRAMS_AND_FLOWS.md` for comprehensive visual flowcharts and user flows, and `docs/API.md` for the full API contract.
 
 ## Repository structure
 
@@ -25,7 +25,8 @@ ncpor-portal/
 │   └── src/{pages,components,lib,types}/
 ├── docs/
 │   ├── API.md
-│   └── ARCHITECTURE.md
+│   ├── ARCHITECTURE.md
+│   └── DIAGRAMS_AND_FLOWS.md     # Visual user flows & architecture diagrams
 └── .env.example
 ```
 
